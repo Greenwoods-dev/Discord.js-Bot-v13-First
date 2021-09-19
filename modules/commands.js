@@ -8,7 +8,13 @@ module.exports = client => {
     // ! commands
     client.on("messageCreate", async (msg) => {
         if(!msg.guild || msg.author.bot) return;
-        let { prefix } = config;
+
+        client.settings.ensure(msg.guild.id, {
+            prefix: config.prefix
+        });
+
+        let prefix = client.settings.get(msg.guild.id, `prefix`);
+
         const prefixRegex = new RegExp(`^(<@!?${client.user.id}>|${escapeRegex(prefix)})\\s*`);
         if (!prefixRegex.test(msg.content)) return;
         const [, matchedPrefix] = msg.content.match(prefixRegex);
@@ -25,6 +31,26 @@ module.exports = client => {
 
         if (cmd) {
             switch (cmd) {
+                case "prefix": 
+                    {
+                        if (!msg.member.permissions.has(Discord.Permissions.FLAGS.MANAGE_GUILD)) {
+                            return msg.reply({embeds: [
+                                new Discord.MessageEmbed().setColor("RED").setTitle(`:x: **You are not allowed to run this Command**`)
+                            ]}).catch(console.error);
+                        }
+                        if (!args[0]) {
+                            return msg.reply({embeds: [
+                                new Discord.MessageEmbed().setColor("RED").setTitle(`:x: **You need to specify what the prefix should be**`)
+                            ]}).catch(console.error);
+                        }
+                        // Change the prefix settings
+                        client.settings.set(msg.guild.id, args[0], "prefix");
+                        // send success message
+                        return msg.reply({embeds: [
+                            new Discord.MessageEmbed().setColor("BLURPLE").setTitle(`:white_check_mark: **Successfully changed the prefix to: \`${args[0]}\`**`)
+                        ]}).catch(console.error);
+                    } 
+                break;
                 case "ping":
                     {
                         msg.reply("pinging the API...").then((message) => {
@@ -34,13 +60,18 @@ module.exports = client => {
                 break;
                 case "help":
                     {
-                        const embed = generateHelpEmbed(msg.guild);
+                        const embeds = generateHelpEmbed(msg.guild);
                         msg.reply({
-                            embeds: [embed]
+                            embeds: embeds
                         }).catch(console.error);
                     }
                 break;
                 case "deploy": {
+                    if (!msg.member.permissions.has(Discord.Permissions.FLAGS.MANAGE_GUILD)) {
+                        return msg.reply({embeds: [
+                            new Discord.MessageEmbed().setColor("RED").setTitle(`:x: **You are not allowed to run this Command**`)
+                        ]}).catch(console.error);
+                    }
                     msg.guild.commands.set(client.allSlashCommands).catch(console.error);
                     msg.reply(`:white_check_mark: Deployed ${client.allSlashCommands.length} Commands to ${msg.guild.name}`).catch(console.error);
                 }
@@ -82,9 +113,9 @@ module.exports = client => {
                 }
             } break;
             case "help": {
-                const embed = generateHelpEmbed(guild);
+                const embeds = generateHelpEmbed(guild);
                 interaction.reply({
-                    embeds: [embed], ephemeral: true
+                    embeds: embeds, ephemeral: true
                 }).catch(console.error);
             } break;
         }

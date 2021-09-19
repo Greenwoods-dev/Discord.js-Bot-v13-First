@@ -11,6 +11,7 @@
   "author": "GreenWoodsDev",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^13.1.0"
+    "discord.js": "^13.1.0",
+    "enmap": "^5.8.7"
   }
 }
